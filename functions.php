@@ -28,48 +28,20 @@ function answerQuery($callback_query_id, $text) {
 function editMessageText($chatId, $message_id, $newText) {
 	$url      =   $GLOBALS[website]. "/editMessageText?chat_id=$chatId&message_id=$message_id&text=".urlencode($newText);
 	file_get_contents($url);
-  }
-
-function checkUserInfo($arrayUser, $username) {
-	$username 	=	'';
-	$tenDK 		=	'';
-	$coinMining =	'';
-	$coinInvest = 	'';
-	$share 		=	'';
-	$facebook 	=	'';
-	$wallet 	=	'';	
-	$result 	=	'';
-	foreach($arrayUser as $key => $value) {
-		if(trim($username) == trim($value[0])) {
-			$username 			=	$value[0];
-			$tenDK 				=	$value[1];
-			$coinMining 		=	$value[2];
-			$coinInvest 		=	$value[3];
-			$share		 		=	$value[4];
-			$facebook		 	=	$value[5];
-			$wallet		 		=	$value[6];
-			$result 	=	"Thông tin user:</br />$username:$username</br />Tên Đăng Ký: $tenDK<br />Số Coin Đào: $coinMining";
-		} else {
-			$result = 'Khong tim thay user';
-		}
-	}
-	return $result;
 }
 
 /**
 *
-* Lay Du Lieu Tu Google Doc
+* Lay Mang Cac Plan Hien Tai
 */
-function getDataFromGoogle($tenPlan, $tenSheet) {
+function getCurrentPlan($tenSheet = '') {
 	require 'vendor/autoload.php';
 
 	$service_account_file = 'client_services.json';
 
-    //$spreadsheet_id = '1m_zf3zUJa4iHemxzDSHPJ9KHhN0868ShNoeqc7tQ-kQ';
-    $spreadsheet_id = $tenSheet;
-
-    //$spreadsheet_range = 'Buzz kì 6';
-    $spreadsheet_range = $tenPlan;
+    if($tenSheet == '') {
+    	$spreadsheet_id = '1m_zf3zUJa4iHemxzDSHPJ9KHhN0868ShNoeqc7tQ-kQ';
+    }
 
     $arrayData 	=	array();
 
@@ -81,19 +53,15 @@ function getDataFromGoogle($tenPlan, $tenSheet) {
 	  $client->useApplicationDefaultCredentials();
 	  $client->addScope(Google_Service_Sheets::SPREADSHEETS_READONLY);
 	  $service = new Google_Service_Sheets($client);
-	  $result = $service->spreadsheets_values->get($spreadsheet_id, $spreadsheet_range);
-	  $arrayData = $result->getValues(); // Mang du lieu
-
-	  // Loai bo nhung mang khong can thiet
-	  for($i = 0 ; $i < 10; $i++) {
-			unset($arrayData[$i]);
-	   }
-
-	$arrayData 	=	array_values($arrayData);
+	  $range 	=	$service->spreadsheets->get($spreadsheet_id);
+		foreach($range->getSheets() as $s) {
+			$arrayData[] = $s['properties']['title'];
+		}
 
 	return $arrayData;
 }
 
+//Lay Mang User Tren Google Doc
 function getDataUser($tenPlan, $tenSheet) {
 	require 'vendor/autoload.php';
 
@@ -158,7 +126,6 @@ function getUserInfo($username, $arrayUserInfo = array()) {
 // Get Button of Plan
 function convertUserData($arrayCurrentUser) {
 	$arrayKeyboard 		=	array();
-	$count 				=	0;
 	$result 			=	'';
 	foreach($arrayCurrentUser as $key => $value) {
 		
@@ -169,7 +136,6 @@ function convertUserData($arrayCurrentUser) {
 				"text" => strtoupper($key),
 				"callback_data" => "print_$key"
 			);
-			$count++;
 		}
 	}
 
@@ -179,6 +145,7 @@ function convertUserData($arrayCurrentUser) {
 	return $result;
 }
 
+// Tra ve thong tin user khi tim thay
 function getResultPlan($tenPlan, $userId) {
 	$result 	=	'';
 	$tenDK 		=	'';
@@ -196,4 +163,85 @@ function getResultPlan($tenPlan, $userId) {
 		}
 	}
 	return $result;
+}
+
+/**
+*	Tao Nut Cac Plan Hien Co Cua User
+**/
+function getRequestButton($currentUser = array(), $userId) {
+	$arrayUserPlan	= 	array();
+	$arrayResult 	= 	array();
+	$result 		=	'';
+	$tenPlan 		=	'';
+
+	if(!empty($currentUser)) {
+		foreach($currentUser as $key => $value) {
+			if(is_numeric($key) || empty($value)) {
+				continue;
+			} else {
+				$arrayUserPlan[] 	=	ucfirst($key);
+			}
+		} // foreach
+
+		foreach($arrayUserPlan as $k => $v) {
+			$plans 		=	strtolower(trim($v));
+			$status 	=	ucfirst(checkPlanStatus($userId, $plans));
+			$arrayResult[][] 	 = array(
+				"text" 			=> 		$v. " - Trạng Thái: " .$status . " Tái",
+				"callback_data" => 		"request_$v"
+			);
+		}
+	}
+
+	$result 	=	json_encode($arrayResult);
+	$result 	=	substr($result, '1');
+	$result 	=	substr($result, '0', '-1');
+
+	return $result;
+}
+
+//Kiem Tra Trang Thai Tái hay Rút
+function checkPlanStatus($userId, $tenPlan) {
+
+	require 'vendor/autoload.php';
+
+	$result 		=	'';
+
+	$service_account_file = 'client_services.json';
+
+    //$spreadsheet_id = '1m_zf3zUJa4iHemxzDSHPJ9KHhN0868ShNoeqc7tQ-kQ';
+    $spreadsheet_id = '1NgZq41xShwrIkxDxX5XpWlI7QL0D8npnfN7slj_gIK0';
+
+    //$spreadsheet_range = 'Buzz kì 6';
+    $spreadsheet_range = trim($tenPlan);
+
+    $arrayData 	=	array();
+
+    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
+
+    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
+
+  	$client = new Google_Client();
+  	$client->useApplicationDefaultCredentials();
+  	$client->addScope(Google_Service_Sheets::SPREADSHEETS_READONLY);
+  	$service = new Google_Service_Sheets($client);
+  	$result = $service->spreadsheets_values->get($spreadsheet_id, $spreadsheet_range);
+  	$arrayData = $result->getValues(); // Mang du lieu
+
+  	foreach($arrayData as $key => $value) {
+  		if(in_array($userId, $value)) {
+  			$result 	=	$value[8];
+  			break;
+  		}
+  	}
+
+	return $result;
+}
+
+function createRequestCoin($tenPlan) {
+
+	$result 	=	'';
+
+	return $result;
+
 }
