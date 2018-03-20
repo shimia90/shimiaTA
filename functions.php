@@ -25,8 +25,21 @@ function answerQuery($callback_query_id, $text) {
 	file_get_contents($url);
 }
 
-function editMessageText($chatId, $message_id, $newText) {
-	$url      =   $GLOBALS[website]. "/editMessageText?chat_id=$chatId&message_id=$message_id&text=".urlencode($newText);
+/*function editMessageText($chatId, $message_id, $newText) {
+		$url      =   $GLOBALS[website]. "/editMessageText?chat_id=$chatId&message_id=$message_id&text=".urlencode($newText);
+	file_get_contents($url);
+}*/
+
+function editMessageText($chatId, $message_id, $newText, $replyMarkup) {
+		$url      =   $GLOBALS[website]. "/editMessageText?chat_id=$chatId&message_id=$message_id&text=".urlencode($newText);
+		if(!empty($replyMarkup)) {
+			$url 	.=		'&reply_markup={"inline_keyboard":['.$replyMarkup.'],"resize_keyboard":true}';
+		}
+	file_get_contents($url);
+}
+
+function editMessageReplyMarkup($chatId, $message_id, $replyMarkup) {
+		$url      =   $GLOBALS[website]. '/editMessageReplyMarkup?chat_id='.$chatId.'&message_id='.$message_id.'&reply_markup={"inline_keyboard":'.$replyMarkup.',"resize_keyboard":true}';
 	file_get_contents($url);
 }
 
@@ -159,44 +172,9 @@ function getResultPlan($tenPlan, $userId) {
 			$soCoinDao 	=	$userPlanDetail[$k][3];
 			$coPhan 	  =	$userPlanDetail[$k][5];
 			$laituan 	  =	end($userPlanDetail[$k]);
-			$result 	      =	"Thông tin plan ".(strtoupper($key))." của bạn:\nTên Đăng Ký: ".ucwords($tenDK)."\nSố Coin Đào PoS: ".$soCoinDao."\nCổ Phần: ".$coPhan."\nLãi Tuần: ".$laituan;
+			$result 	      =	"Thông tin plan ".(strtoupper($tenPlan))." của bạn:\nTên Đăng Ký: ".ucwords($tenDK)."\nSố Coin Đào PoS: ".$soCoinDao."\nCổ Phần: ".$coPhan."\nLãi Tuần: ".$laituan;
 		}
 	}
-	return $result;
-}
-
-/**
-*	Tao Nut Cac Plan Hien Co Cua User
-**/
-function getRequestButton($currentUser = array(), $userId) {
-	$arrayUserPlan	= 	array();
-	$arrayResult 	= 	array();
-	$result 		=	'';
-	$tenPlan 		=	'';
-
-	if(!empty($currentUser)) {
-		foreach($currentUser as $key => $value) {
-			if(is_numeric($key) || empty($value)) {
-				continue;
-			} else {
-				$arrayUserPlan[] 	=	ucfirst($key);
-			}
-		} // foreach
-
-		foreach($arrayUserPlan as $k => $v) {
-			$plans 		=	strtolower(trim($v));
-			$status 	=	ucfirst(checkPlanStatus($userId, $plans));
-			$arrayResult[][] 	 = array(
-				"text" 			=> 		$v. " - Trạng Thái: " .$status . " Tái",
-				"callback_data" => 		"request_$v"
-			);
-		}
-	}
-
-	$result 	=	json_encode($arrayResult);
-	$result 	=	substr($result, '1');
-	$result 	=	substr($result, '0', '-1');
-
 	return $result;
 }
 
@@ -238,9 +216,44 @@ function checkPlanStatus($userId, $tenPlan) {
 	return $result;
 }
 
+/**
+*	Tao Nut Cac Plan Hien Co Cua User
+**/
+function getRequestButton($currentUser = array(), $userId) {
+	$arrayUserPlan	= 	array();
+	$arrayResult 	= 	array();
+	$result 		=	'';
+	$tenPlan 		=	'';
+
+	if(!empty($currentUser)) {
+		foreach($currentUser as $key => $value) {
+			if(is_numeric($key) || empty($value)) {
+				continue;
+			} else {
+				$arrayUserPlan[] 	=	ucfirst($key);
+			}
+		} // foreach
+
+		foreach($arrayUserPlan as $k => $v) {
+			$plans 		=	strtolower(trim($v));
+			$status 	=	ucfirst(checkPlanStatus($userId, $plans));
+			$arrayResult[][] 	 = array(
+				"text" 			=> 		$v. " - Trạng Thái: " .$status . " Tái",
+				"callback_data" => 		"request_$plans"
+			);
+		}
+	}
+
+	$result 	=	json_encode($arrayResult);
+	$result 	=	substr($result, '1');
+	$result 	=	substr($result, '0', '-1');
+
+	return $result;
+}
+
 function createRequestCoin($tenPlan) {
 
-	$result 	=	'';
+	$result 	=	'[{"text":"Có","callback_data":"'.$tenPlan.'_yes"}, {"text":"Không","callback_data":"'.$tenPlan.'_no"}],[{"text":"Quay Lại","callback_data":"answer_back"}]';
 
 	return $result;
 

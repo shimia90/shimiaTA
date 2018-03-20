@@ -18,15 +18,27 @@ class ComposerStaticInit4cdcf4961b36357298ddb80644072864
         array (
             'phpseclib\\' => 10,
         ),
+        'T' => 
+        array (
+            'TelegramBot\\InlineKeyboardPagination\\' => 37,
+        ),
         'P' => 
         array (
             'Psr\\Log\\' => 8,
             'Psr\\Http\\Message\\' => 17,
             'Psr\\Cache\\' => 10,
         ),
+        'N' => 
+        array (
+            'NPM\\TelegramBotManager\\' => 23,
+        ),
         'M' => 
         array (
             'Monolog\\' => 8,
+        ),
+        'L' => 
+        array (
+            'Longman\\TelegramBot\\' => 20,
         ),
         'G' => 
         array (
@@ -46,6 +58,10 @@ class ComposerStaticInit4cdcf4961b36357298ddb80644072864
         array (
             0 => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib',
         ),
+        'TelegramBot\\InlineKeyboardPagination\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/php-telegram-bot/inline-keyboard-pagination/src',
+        ),
         'Psr\\Log\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/log/Psr/Log',
@@ -58,9 +74,17 @@ class ComposerStaticInit4cdcf4961b36357298ddb80644072864
         array (
             0 => __DIR__ . '/..' . '/psr/cache/src',
         ),
+        'NPM\\TelegramBotManager\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/php-telegram-bot/telegram-bot-manager/src',
+        ),
         'Monolog\\' => 
         array (
             0 => __DIR__ . '/..' . '/monolog/monolog/src/Monolog',
+        ),
+        'Longman\\TelegramBot\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/longman/telegram-bot/src',
         ),
         'GuzzleHttp\\Psr7\\' => 
         array (
