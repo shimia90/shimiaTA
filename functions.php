@@ -211,6 +211,7 @@ function checkPlanStatus($userId, $tenPlan) {
   			$result 	=	$value[8];
   			break;
   		}
+
   	}
 
 	return $result;
@@ -254,7 +255,46 @@ function getRequestButton($currentUser = array(), $userId) {
 function createRequestCoin($tenPlan) {
 
 	$result 	=	'[{"text":"Có","callback_data":"'.$tenPlan.'_yes"}, {"text":"Không","callback_data":"'.$tenPlan.'_no"}],[{"text":"Quay Lại","callback_data":"answer_back"}]';
+	
 
 	return $result;
+
+}
+
+function updateRequest($userId, $tenPlan, $updateText) {
+
+	require 'vendor/autoload.php';
+
+	$service_account_file = 'client_services.json';
+
+	$spreadsheet_id = '1NgZq41xShwrIkxDxX5XpWlI7QL0D8npnfN7slj_gIK0';
+
+	$spreadsheet_range = $tenPlan;
+
+	$status 	=	false;
+
+	putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
+	$client = new Google_Client();
+	$client->useApplicationDefaultCredentials();
+	$client->addScope(Google_Service_Sheets::SPREADSHEETS);
+	$service = new Google_Service_Sheets($client);
+
+	$result = $service->spreadsheets_values->get($spreadsheet_id, $spreadsheet_range);
+
+	$valueRange= new Google_Service_Sheets_ValueRange($client);
+	$valueRange->setValues(["values" => [$updateText]]);
+	$conf = ["valueInputOption" => "RAW"];
+	$arrayData  = $result->getValues();
+
+	foreach($arrayData as $key => $value) {
+	    if(in_array($userId, $value)) {
+	        $updateRange	=$spreadsheet_range.'!i'.($key+1);
+	        $service->spreadsheets_values->update($spreadsheet_id, $updateRange, $valueRange, $conf);
+	        $status 	=	true;
+	        break;
+	    }
+   	}
+
+   	return $status;
 
 }

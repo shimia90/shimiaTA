@@ -28,39 +28,76 @@
   // Lay mang tu Google
   $userInfo       	=    	getDataUser('user', '1NgZq41xShwrIkxDxX5XpWlI7QL0D8npnfN7slj_gIK0'); // Array User From Google
 
-  $currentUser    	=    	getUserInfo('497434187', $userInfo);// Array Current User 483198952 - thay bang $chatID khi test xong
+  $currentUser    	=    	getUserInfo($chatId, $userInfo);// Array Current User 483198952 - thay bang $chatID khi test xong
 
   $userInline     	=    	convertUserData($currentUser);
 
   // Tao nut yeu cau rút coin
-  $keyboardRequest  =   	getRequestButton($currentUser, '497434187');
+  $keyboardRequest  =   	getRequestButton($currentUser, $chatId);
 
 // Kiem Tra User
-$query          =   $update['callback_query'];
-$queryid        =   $query['id'];
-$queryUserId    =   $query['from']['id'];
-$queryUsername  =   $query['from']['username'];
-$queryData      =   $query['data'];
-$querymsgId     =   $query['message']['message_id'];
+$query            =   $update['callback_query'];
+$queryid          =   $query['id'];
+$queryUserId      =   $query['from']['id'];
+$queryUsername    =   $query['from']['username'];
+$queryData        =   $query['data'];
+$querymsgId       =   $query['message']['message_id'];
+$querymsgText     =   $query['message']['text'];
 
-
-// Truy xuat thong tin Plan
 $arrayCurrentPlan    =   getCurrentPlan();
 foreach($arrayCurrentPlan as $k => $v) {
+  // Truy xuat thong tin Plan
   if($queryData   ==   "print_$v") {
-    $result   =   getResultPlan($v, '497434187');
+    $result   =   getResultPlan($v, $queryUserId);
     answerQuery($queryid, $result);
     exit();
   }
 
+  // Tao nut yeu cau tai rut
   if($queryData   ==   "request_$v") {
-    $answerButton   =   createRequestCoin($v);
-    editMessageText($queryUserId, $querymsgId, "Vui lòng chọn yêu cầu cho plan ". strtoupper($v) ." của bạn", $answerButton);
+  	date_default_timezone_set('Asia/Ho_Chi_Minh');
+  	$date = new DateTime();
+  	if($date->format('D') === 'Fri')  {
+  		answerQuery($queryid, "Hôm nay là ngày chia lãi, bạn vui lòng yêu cầu vào ngày khác.");
+  	} else {
+  		$answerButton   =   createRequestCoin($v);
+    	editMessageText($queryUserId, $querymsgId, "Vui lòng chọn yêu cầu cho plan ". strtoupper($v) ." của bạn", $answerButton);
+  	}
+    
   }
+
+  if($queryData == $v.'_yes') {
+    $result   =   updateRequest($queryUserId, $v, "có");
+    if($result == true) {
+      answerQuery($queryid, "Cập nhật thành công");
+    } else {
+      answerQuery($queryid, "Lỗi ! Vui lòng thử lại");
+    }
+    exit();
+  }
+
+  if($queryData == $v.'_no') {
+    $result   =   updateRequest($queryUserId, $v, "không");
+    if($result == true) {
+      answerQuery($queryid, "Cập nhật thành công");
+    } else {
+      answerQuery($queryid, "Lỗi ! Vui lòng thử lại");
+    }
+    exit();
+  }
+
 }
 
+/*$timestamp = time();
+if(date('D', $timestamp) === 'Fri') 
+    echo "It is Wednesday today\n";*/
+
 if($queryData   ==   "answer_back") {
-	editMessageText($queryUserId, $querymsgId, 'Chọn Plan bạn muốn rút Coin', $keyboardRequest);
+  $currentUser      =     getUserInfo($queryUserId, $userInfo);
+  $keyboardRequest  =     getRequestButton($currentUser, $queryUserId);
+  //answerQuery($queryid, $userInline);
+  editMessageText($queryUserId, $querymsgId, "Chọn Plan bạn muốn rút Coin", $keyboardRequest);
+  //keyboard($queryUserId, "Chọn Plan bạn muốn rút Coin", $keyboardRequest, 'inline');
 	exit();
 }
 
