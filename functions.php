@@ -101,7 +101,7 @@ function getDataUser($tenPlan, $tenSheet) {
 */
 function getUserInfo($username, $arrayUserInfo = array()) {
 
-    $arrayCurrentUser   = array();
+    $arrayCurrentUser   =   array();
     $arrayCurrentPlan   =   array();
 
     for($i = 0; $i < 4; $i++) {
@@ -111,7 +111,7 @@ function getUserInfo($username, $arrayUserInfo = array()) {
     
     foreach($arrayUserInfo as $key => $value) {
       if(in_array($username, $value) && $username != '') {
-        $arrayCurrentUser   = $arrayUserInfo[$key];
+        $arrayCurrentUser   =   $arrayUserInfo[$key];
         break;
       } 
     }
@@ -347,9 +347,7 @@ function processLogin($arrayUpdate, $initKeyboard) {
 */        default:
             if($verified == 'no') {
               sendMessage($chatId, "Vui lòng nhấn /start để đăng nhập");
-            } else {
-              keyboard($chatId, "Xin chào $firstName $lastName, vui lòng chọn yêu cầu dưới đây" , $initKeyboard, "physical");
-            }
+            } 
           
           break;
       }

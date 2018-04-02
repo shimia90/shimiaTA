@@ -96,7 +96,19 @@ if($queryData   ==   "answer_back") {
   exit();
 }
 
-if(!empty($currentUser)) {
+$logged     =   'no';
+foreach($currentUser as $key => $value) {
+  if(is_numeric($key)) {
+    continue;
+  } else {
+    if($value == $chatId) {
+      $logged   =   'yes';
+    }
+  }
+}
+
+if(!empty($currentUser) && $logged == 'yes') {
+
   switch ($text) {
       case '/start':
           keyboard($chatId, "Xin chào $firstName $lastName" , $initKeyboard, "physical");
