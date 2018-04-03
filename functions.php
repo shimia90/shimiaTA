@@ -9,6 +9,11 @@ function keyboard($chatId, $text, $keyboard, $type) {
         $keypad   = '&reply_markup={"inline_keyboard":['.$keyboard.'],"resize_keyboard":true}';
       }   
   }
+  /*if(!empty($text)) {
+    $url      =   $GLOBALS[website]. "/sendMessage?chat_id=$chatId&parse_mode=HTML&text=".urlencode($text).$keypad;
+  } else {
+    $url      =   $GLOBALS[website]. "/sendMessage?chat_id=$chatId&parse_mode=HTML".$keypad;
+  }*/
   $url      =   $GLOBALS[website]. "/sendMessage?chat_id=$chatId&parse_mode=HTML&text=".urlencode($text).$keypad;
   file_get_contents($url);
 }
@@ -139,7 +144,7 @@ function convertUserData($arrayCurrentUser) {
       continue;
     } else {
       $arrayKeyboard[][]   = array(
-        "text" => strtoupper($key),
+        "text"          => strtoupper($key),
         "callback_data" => "print_$key"
       );
     }
@@ -172,7 +177,7 @@ function getResultPlan($tenPlan, $userId) {
 }
 
 //Kiem Tra Trang Thai Tái hay Rút
-function checkPlanStatus($userId, $tenPlan) {
+function checkPlanStatus($userId, $tenPlan, $checkStatus) {
 
   require 'vendor/autoload.php';
 
@@ -201,7 +206,11 @@ function checkPlanStatus($userId, $tenPlan) {
 
     foreach($arrayData as $key => $value) {
       if(in_array($userId, $value)) {
-        $result   = $value[8];
+        if($checkStatus == 'check_tuan') {
+          $result   = $value[8];
+        } else if($checkStatus == 'check_thang') {
+          $result   = $value[13];
+        }
         break;
       }
 
@@ -213,7 +222,7 @@ function checkPlanStatus($userId, $tenPlan) {
 /**
 * Tao Nut Cac Plan Hien Co Cua User
 **/
-function getRequestButton($currentUser = array(), $userId) {
+function getRequestButton($currentUser = array(), $userId, $checkStatus) {
   $arrayUserPlan  =   array();
   $arrayResult  =   array();
   $result     = '';
@@ -230,11 +239,22 @@ function getRequestButton($currentUser = array(), $userId) {
 
     foreach($arrayUserPlan as $k => $v) {
       $plans    = strtolower(trim($v));
-      $status   = ucfirst(checkPlanStatus($userId, $plans));
-      $arrayResult[][]   = array(
-        "text"      =>    $v. " - Trạng Thái: " .$status . " Tái",
-        "callback_data" =>    "request_$plans"
-      );
+      if($checkStatus == 'check_tuan') {
+        $status   = ucfirst(checkPlanStatus($userId, $plans, $checkStatus));
+        $arrayResult[][]   = array(
+          "text"      =>    $v. " - Trạng Thái: " .$status . " Tái",
+          "callback_data" =>    "request_$plans"
+        );
+      } elseif($checkStatus == 'check_thang') {
+        $status   = ucfirst(checkPlanStatus($userId, $plans, $checkStatus));
+        if($status == '') {
+          $status = 'Chưa có yêu cầu';
+        }
+        $arrayResult[][]   = array(
+          "text"      =>    $v. " - Trạng Thái: " .$status,
+          "callback_data" =>    "request_month_$plans"
+        );
+      }
     }
   }
 
@@ -245,16 +265,20 @@ function getRequestButton($currentUser = array(), $userId) {
   return $result;
 }
 
-function createRequestCoin($tenPlan) {
+function createRequestCoin($tenPlan, $buttonType) {
 
-  $result   = '[{"text":"Có","callback_data":"'.$tenPlan.'_yes"}, {"text":"Không","callback_data":"'.$tenPlan.'_no"}],[{"text":"Quay Lại","callback_data":"answer_back"}]';
+  if($buttonType == 'nut_tuan') {
+    $result   = '[{"text":"✅ Có","callback_data":"'.$tenPlan.'_yes"}, {"text":"❌ Không","callback_data":"'.$tenPlan.'_no"}],[{"text":"🔙 Quay Lại","callback_data":"answer_back"}]';
+  } elseif($buttonType == 'nut_thang') {
+    $result   = '[{"text":"💸 Rút Lãi","callback_data":"'.$tenPlan.'_month_lai"}, {"text":"💰 Rút Gốc","callback_data":"'.$tenPlan.'_month_goc"},{"text":"Hủy Yêu Cầu","callback_data":"'.$tenPlan.'_month_huy"}],[{"text":"🔙 Quay Lại","callback_data":"answer_month_back"}]';
+  }
   
 
   return $result;
 
 }
 
-function updateRequest($userId, $tenPlan, $updateText) {
+function updateRequest($userId, $tenPlan, $updateText, $updateType) {
 
   require 'vendor/autoload.php';
 
@@ -281,10 +305,18 @@ function updateRequest($userId, $tenPlan, $updateText) {
 
   foreach($arrayData as $key => $value) {
       if(in_array($userId, $value)) {
-          $updateRange  =$spreadsheet_range.'!i'.($key+1);
-          $service->spreadsheets_values->update($spreadsheet_id, $updateRange, $valueRange, $conf);
-          $status   = true;
-          break;
+          
+          if($updateType == 'rut_tuan') {
+            $updateRange  =$spreadsheet_range.'!i'.($key+1);
+            $service->spreadsheets_values->update($spreadsheet_id, $updateRange, $valueRange, $conf);
+            $status   = true;
+            break;
+          } else if($updateType == 'rut_thang') {
+            $updateRange  =$spreadsheet_range.'!n'.($key+1);
+            $service->spreadsheets_values->update($spreadsheet_id, $updateRange, $valueRange, $conf);
+            $status   = true;
+            break;
+          }
       }
     }
 
