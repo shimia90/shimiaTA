@@ -63,8 +63,8 @@ class DebugCommand extends AdminCommand
         $debug_info = [];
 
         $debug_info[] = sprintf('*TelegramBot version:* `%s`', $this->telegram->getVersion());
-        $debug_info[] = sprintf('*Download path:* `%s`', $this->telegram->getDownloadPath());
-        $debug_info[] = sprintf('*Upload path:* `%s`', $this->telegram->getUploadPath());
+        $debug_info[] = sprintf('*Download path:* `%s`', $this->telegram->getDownloadPath() ?: '`_Not set_`');
+        $debug_info[] = sprintf('*Upload path:* `%s`', $this->telegram->getUploadPath() ?: '`_Not set_`');
 
         // Commands paths.
         $debug_info[] = '*Commands paths:*';
@@ -98,11 +98,17 @@ class DebugCommand extends AdminCommand
             if (Request::getInput() === '') {
                 $debug_info[] = $webhook_info_title . ' `Using getUpdates method, not Webhook.`';
             } else {
-                $webhook_info_result = json_encode(json_decode(Request::getWebhookInfo(), true)['result'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                $webhook_info_result = json_decode(Request::getWebhookInfo(), true)['result'];
+                // Add a human-readable error date string if necessary.
+                if (isset($webhook_info_result['last_error_date'])) {
+                    $webhook_info_result['last_error_date_string'] = date('Y-m-d H:i:s', $webhook_info_result['last_error_date']);
+                }
+
+                $webhook_info_result_str = json_encode($webhook_info_result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                 $debug_info[] = $webhook_info_title;
                 $debug_info[] = sprintf(
                     '```' . PHP_EOL . '%s```',
-                    $webhook_info_result
+                    $webhook_info_result_str
                 );
             }
         } catch (\Exception $e) {

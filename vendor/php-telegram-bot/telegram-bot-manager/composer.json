@@ -1,13 +1,13 @@
 {
-    "name": "noplanman/telegram-bot-manager",
+    "name": "php-telegram-bot/telegram-bot-manager",
     "type": "library",
     "description": "PHP Telegram Bot Manager",
     "keywords": ["telegram", "bot", "manager"],
     "license": "MIT",
-    "homepage": "https://github.com/noplanman/php-telegram-bot-manager",
+    "homepage": "https://github.com/php-telegram-bot/telegram-bot-manager",
     "support": {
-        "issues": "https://github.com/noplanman/php-telegram-bot-manager/issues",
-        "source": "https://github.com/noplanman/php-telegram-bot-manager"
+        "issues": "https://github.com/php-telegram-bot/telegram-bot-manager/issues",
+        "source": "https://github.com/php-telegram-bot/telegram-bot-manager"
     },
     "authors": [
         {
@@ -19,21 +19,22 @@
     ],
     "require": {
         "php": "^7.0",
-        "longman/telegram-bot": "^0.43"
+        "longman/telegram-bot": "^0.48",
+        "longman/ip-tools": "^1.2"
     },
     "require-dev": {
         "jakub-onderka/php-parallel-lint": "^0.9.2",
-        "phpunit/phpunit": "^6.1",
-        "squizlabs/php_codesniffer": "^2.8"
+        "phpunit/phpunit": "^6.3",
+        "squizlabs/php_codesniffer": "^3.0"
     },
     "autoload": {
         "psr-4": {
-            "NPM\\TelegramBotManager\\": "src"
+            "TelegramBot\\TelegramBotManager\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "NPM\\TelegramBotManager\\Tests\\": "tests/TelegramBotManager/Tests"
+            "TelegramBot\\TelegramBotManager\\Tests\\": "tests"
         }
     },
     "scripts": {
