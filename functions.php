@@ -1,391 +1,7 @@
 <?php
 // Cac phuong thuc telegram
-
-function keyboard($chatId, $text, $keyboard, $type) {
-  if(isset($keyboard)) {
-      if($type == 'physical') {
-        $keypad   = '&reply_markup={"keyboard":['.$keyboard.'],"resize_keyboard":true}';
-      } else {
-        $keypad   = '&reply_markup={"inline_keyboard":['.$keyboard.'],"resize_keyboard":true}';
-      }   
-  }
-  /*if(!empty($text)) {
-    $url      =   $GLOBALS[website]. "/sendMessage?chat_id=$chatId&parse_mode=HTML&text=".urlencode($text).$keypad;
-  } else {
-    $url      =   $GLOBALS[website]. "/sendMessage?chat_id=$chatId&parse_mode=HTML".$keypad;
-  }*/
-  $url      =   $GLOBALS[website]. "/sendMessage?chat_id=$chatId&parse_mode=HTML&text=".urlencode($text).$keypad;
-  file_get_contents($url);
-}
-
-function sendMessage($chatId, $text) {
-  $url      =   $GLOBALS[website]. "/sendMessage?chat_id=$chatId&parse_mode=HTML&text=".urlencode($text);
-  file_get_contents($url);
-}
-
-function answerQuery($callback_query_id, $text) {
-  $url  = $GLOBALS[website]."/answerCallbackQuery?callback_query_id=$callback_query_id&show_alert=true&text=".urlencode($text);
-  file_get_contents($url);
-}
-
-function editMessageText($chatId, $message_id, $newText, $replyMarkup) {
-    $url      =   $GLOBALS[website]. "/editMessageText?chat_id=$chatId&message_id=$message_id&text=".urlencode($newText);
-    if(!empty($replyMarkup)) {
-      $url  .=    '&reply_markup={"inline_keyboard":['.$replyMarkup.'],"resize_keyboard":true}';
-    }
-  file_get_contents($url);
-}
-
-function editMessageReplyMarkup($chatId, $message_id, $replyMarkup) {
-    $url      =   $GLOBALS[website]. '/editMessageReplyMarkup?chat_id='.$chatId.'&message_id='.$message_id.'&reply_markup={"inline_keyboard":'.$replyMarkup.',"resize_keyboard":true}';
-  file_get_contents($url);
-}
-
-/**
-*
-* Lay Mang Cac Plan Hien Tai
-*/
-function getCurrentPlan($tenSheet = '') {
-  require 'vendor/autoload.php';
-
-  $service_account_file = 'client_services.json';
-
-    if($tenSheet == '') {
-      $spreadsheet_id = '1m_zf3zUJa4iHemxzDSHPJ9KHhN0868ShNoeqc7tQ-kQ';
-    }
-
-    $arrayData  = array();
-
-    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-
-    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-
-    $client = new Google_Client();
-    $client->useApplicationDefaultCredentials();
-    $client->addScope(Google_Service_Sheets::SPREADSHEETS_READONLY);
-    $service = new Google_Service_Sheets($client);
-    $range  = $service->spreadsheets->get($spreadsheet_id);
-    foreach($range->getSheets() as $s) {
-      $arrayData[] = $s['properties']['title'];
-    }
-
-  return $arrayData;
-}
-
-//Lay Mang User Tren Google Doc
-function getDataUser($tenPlan, $tenSheet) {
-  require 'vendor/autoload.php';
-
-  $service_account_file = 'client_services.json';
-
-    //$spreadsheet_id = '1m_zf3zUJa4iHemxzDSHPJ9KHhN0868ShNoeqc7tQ-kQ';
-    $spreadsheet_id = $tenSheet;
-
-    //$spreadsheet_range = 'Buzz kì 6';
-    $spreadsheet_range = $tenPlan;
-
-    $arrayData  = array();
-
-    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-
-    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-
-    $client = new Google_Client();
-    $client->useApplicationDefaultCredentials();
-    $client->addScope(Google_Service_Sheets::SPREADSHEETS_READONLY);
-    $service = new Google_Service_Sheets($client);
-    $result = $service->spreadsheets_values->get($spreadsheet_id, $spreadsheet_range);
-    $arrayData = $result->getValues(); // Mang du lieu
-
-  return $arrayData;
-}
-
-/**
-*
-* Lay Du Lieu Tu Bang User
-*/
-function getUserInfo($username, $arrayUserInfo = array()) {
-
-    $arrayCurrentUser   =   array();
-    $arrayCurrentPlan   =   array();
-
-    for($i = 0; $i < 4; $i++) {
-      unset($arrayUserInfo[0][$i]);
-    }
-    $arrayCurrentPlan   = $arrayUserInfo[0];
-    
-    foreach($arrayUserInfo as $key => $value) {
-      if(in_array($username, $value) && $username != '') {
-        $arrayCurrentUser   =   $arrayUserInfo[$key];
-        break;
-      } 
-    }
-
-    foreach($arrayCurrentPlan as $k => $v) {
-      for($j = 0; $j < count($arrayCurrentUser); $j++) {
-        if($k == $j) {
-          $arrayCurrentUser[$v] = $arrayCurrentUser[$j];
-        }
-      }
-      unset($arrayCurrentUser[$k]);
-    }
-
-    return $arrayCurrentUser;
-  
-}
-
-// Get Button of Plan
-function convertUserData($arrayCurrentUser) {
-  $arrayKeyboard    = array();
-  $result       = '';
-  foreach($arrayCurrentUser as $key => $value) {
-    
-    if($value == '' || is_numeric($key)) {
-      continue;
-    } else {
-      $arrayKeyboard[][]   = array(
-        "text"          => strtoupper($key),
-        "callback_data" => "print_$key"
-      );
-    }
-  }
-
-  $result   = json_encode($arrayKeyboard);
-  $result   = substr($result, '1');
-  $result   = substr($result, '0', '-1');
-  return $result;
-}
-
-// Tra ve thong tin user khi tim thay
-function getResultPlan($tenPlan, $userId) {
-  $result   = '';
-  $tenDK    = '';
-  $soCoinDao  =   ''; 
-  $coPhan   = '';
-  $laiTuan  = '';
-  $userPlanDetail   = getDataUser($tenPlan, '1m_zf3zUJa4iHemxzDSHPJ9KHhN0868ShNoeqc7tQ-kQ');
-  foreach($userPlanDetail as $k => $v) {
-    if(in_array($userId, $v)) {
-      $tenDK      = $userPlanDetail[$k][2];
-      $soCoinDao  = $userPlanDetail[$k][3];
-      $coPhan     = $userPlanDetail[$k][5];
-      $laituan    = end($userPlanDetail[$k]);
-      $result         = "Thông tin plan ".(strtoupper($tenPlan))." của bạn:\nTên Đăng Ký: ".ucwords($tenDK)."\nSố Coin Đào PoS: ".$soCoinDao."\nCổ Phần: ".$coPhan."\nLãi Tuần: ".$laituan;
-    }
-  }
-  return $result;
-}
-
-//Kiem Tra Trang Thai Tái hay Rút
-function checkPlanStatus($userId, $tenPlan, $checkStatus) {
-
-  require 'vendor/autoload.php';
-
-  $result     = '';
-
-  $service_account_file = 'client_services.json';
-
-    //$spreadsheet_id = '1m_zf3zUJa4iHemxzDSHPJ9KHhN0868ShNoeqc7tQ-kQ';
-    $spreadsheet_id = '1NgZq41xShwrIkxDxX5XpWlI7QL0D8npnfN7slj_gIK0';
-
-    //$spreadsheet_range = 'Buzz kì 6';
-    $spreadsheet_range = trim($tenPlan);
-
-    $arrayData  = array();
-
-    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-
-    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-
-    $client = new Google_Client();
-    $client->useApplicationDefaultCredentials();
-    $client->addScope(Google_Service_Sheets::SPREADSHEETS_READONLY);
-    $service = new Google_Service_Sheets($client);
-    $result = $service->spreadsheets_values->get($spreadsheet_id, $spreadsheet_range);
-    $arrayData = $result->getValues(); // Mang du lieu
-
-    foreach($arrayData as $key => $value) {
-      if(in_array($userId, $value)) {
-        if($checkStatus == 'check_tuan') {
-          $result   = $value[8];
-        } else if($checkStatus == 'check_thang') {
-          $result   = $value[13];
-        }
-        break;
-      }
-
-    }
-
-  return $result;
-}
-
-/**
-* Tao Nut Cac Plan Hien Co Cua User
-**/
-function getRequestButton($currentUser = array(), $userId, $checkStatus) {
-  $arrayUserPlan  =   array();
-  $arrayResult  =   array();
-  $result     = '';
-  $tenPlan    = '';
-
-  if(!empty($currentUser)) {
-    foreach($currentUser as $key => $value) {
-      if(is_numeric($key) || empty($value)) {
-        continue;
-      } else {
-        $arrayUserPlan[]  = ucfirst($key);
-      }
-    } // foreach
-
-    foreach($arrayUserPlan as $k => $v) {
-      $plans    = strtolower(trim($v));
-      if($checkStatus == 'check_tuan') {
-        $status   = ucfirst(checkPlanStatus($userId, $plans, $checkStatus));
-        $arrayResult[][]   = array(
-          "text"      =>    $v. " - Trạng Thái: " .$status . " Tái",
-          "callback_data" =>    "request_$plans"
-        );
-      } elseif($checkStatus == 'check_thang') {
-        $status   = ucfirst(checkPlanStatus($userId, $plans, $checkStatus));
-        if($status == '') {
-          $status = 'Chưa có yêu cầu';
-        }
-        $arrayResult[][]   = array(
-          "text"      =>    $v. " - Trạng Thái: " .$status,
-          "callback_data" =>    "request_month_$plans"
-        );
-      }
-    }
-  }
-
-  $result   = json_encode($arrayResult);
-  $result   = substr($result, '1');
-  $result   = substr($result, '0', '-1');
-
-  return $result;
-}
-
-function createRequestCoin($tenPlan, $buttonType) {
-
-  if($buttonType == 'nut_tuan') {
-    $result   = '[{"text":"✅ Có","callback_data":"'.$tenPlan.'_yes"}, {"text":"❌ Không","callback_data":"'.$tenPlan.'_no"}],[{"text":"🔙 Quay Lại","callback_data":"answer_back"}]';
-  } elseif($buttonType == 'nut_thang') {
-    $result   = '[{"text":"💸 Rút Lãi","callback_data":"'.$tenPlan.'_month_lai"}, {"text":"💰 Rút Gốc","callback_data":"'.$tenPlan.'_month_goc"},{"text":"Hủy Yêu Cầu","callback_data":"'.$tenPlan.'_month_huy"}],[{"text":"🔙 Quay Lại","callback_data":"answer_month_back"}]';
-  }
-  
-
-  return $result;
-
-}
-
-function updateRequest($userId, $tenPlan, $updateText, $updateType) {
-
-  require 'vendor/autoload.php';
-
-  $service_account_file = 'client_services.json';
-
-  $spreadsheet_id = '1NgZq41xShwrIkxDxX5XpWlI7QL0D8npnfN7slj_gIK0';
-
-  $spreadsheet_range = $tenPlan;
-
-  $status   = false;
-
-  putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-  $client = new Google_Client();
-  $client->useApplicationDefaultCredentials();
-  $client->addScope(Google_Service_Sheets::SPREADSHEETS);
-  $service = new Google_Service_Sheets($client);
-
-  $result = $service->spreadsheets_values->get($spreadsheet_id, $spreadsheet_range);
-
-  $valueRange= new Google_Service_Sheets_ValueRange($client);
-  $valueRange->setValues(["values" => [$updateText]]);
-  $conf = ["valueInputOption" => "RAW"];
-  $arrayData  = $result->getValues();
-
-  foreach($arrayData as $key => $value) {
-      if(in_array($userId, $value)) {
-          
-          if($updateType == 'rut_tuan') {
-            $updateRange  =$spreadsheet_range.'!i'.($key+1);
-            $service->spreadsheets_values->update($spreadsheet_id, $updateRange, $valueRange, $conf);
-            $status   = true;
-            break;
-          } else if($updateType == 'rut_thang') {
-            $updateRange  =$spreadsheet_range.'!n'.($key+1);
-            $service->spreadsheets_values->update($spreadsheet_id, $updateRange, $valueRange, $conf);
-            $status   = true;
-            break;
-          }
-      }
-    }
-
-    return $status;
-
-}
-
-function processLogin($arrayUpdate, $initKeyboard) {
-  $result     	  =   '';
-  $chatId         =   $arrayUpdate['message']['from']['id'];
-  $firstName      =   $arrayUpdate['message']['from']['first_name'];
-  $lastName       =   $arrayUpdate['message']['from']['last_name'];
-  $text           =   $arrayUpdate['message']['text'];
-  $step           =   getData('step-'.$chatId);
-  $verified       =   setData('verified','no');
-
-  switch ($text) {
-    case '/start':
-      setData('step-'.$chatId,'1');
-      sendMessage($chatId, "Bạn chưa đăng nhập\n Vui lòng nhập Username của bạn:");
-      // "Welcome!\nSend me your first name now:\n\nsend /cancel to cancel."
-      break;
-    case '/cancel':
-      setData('step-'.$chatId,'0');
-      sendMessage($chatId, "Thông tin đã hủy ! Vui lòng nhấn /start để đăng nhập lại");
-      break;
-    default:
-      switch ($step) {
-        case '1':
-          setData('username-'.$chatId,$text);
-          sendMessage($chatId, "Vui lòng nhập Password của bạn:");
-          setData('step-'.$chatId,'2');
-          break;
-        case '2':
-          setData('password-'.$chatId, $text);
-          $username   =   getData('username-'.$chatId);
-          $password   =   getData('password-'.$chatId);
-          if(checkLogin($username, $password) == 'ok') {
-            //sendMessage($chatId, "Đăng nhập thành công !");
-            //sendMessage($chatId, "Thông tin của bạn:\n<b>Your name:</b> " . "<code>$username</code>" . "\n<b>Your password:</b> " . "<code>$password</code>");
-            keyboard($chatId, "Bạn đã đăng nhập thành công" , $initKeyboard, "physical");
-            insertIdUser($chatId, $username);
-            removeData('username-'.$chatId);
-            removeData('password-'.$chatId);
-            setData('step-'.$chatId,'0');
-            setData('verified','yes');
-          } else {
-            sendMessage($chatId, "Đăng nhập không thành công ! Vui lòng nhấn /start để đăng nhập lại");
-            setData('step-'.$chatId,'0');
-            setData('verified','no');
-          }
-          
-          break;
-        /*case '3':
-          $user_name  = getData('username-'.$chatId);
-          $password   = getData('password-'.$chatId);
-          sendMessage($chatId, "Thông tin của bạn:\n<b>Your name:</b> " . "<code>$user_name</code>" . "\n<b>Your password:</b> " . "<code>$password</code>");
-          setData('step-'.$chatId,'0');
-          break;
-*/        default:
-            if($verified == 'no') {
-              sendMessage($chatId, "Vui lòng nhấn /start để đăng nhập");
-            } 
-          
-          break;
-      }
-      break;
-  }
-}
+include __DIR__.'/database/config.inc.php'; // Database Config
+include __DIR__.'/database/Database.php'; // Class Database
 
 function getData($id){
     $cached = apc_fetch($id);
@@ -400,158 +16,83 @@ function removeData($id){
     apc_delete ($id);
 }
 
-// Kiem Tra User
+// Lấy tên các plan hiện tại trong database
+function getCurrentPlans() {
+  $arrayPlans   =   array();
+  $db = new Database(DB_SERVER,DB_USER,DB_PASS,DB_DATABASE);
+  $arrayPlans = $db->query("SELECT :ten_plan FROM :table",['table'=>'plans', 'ten_plan' => 'ten_plan'])->fetch_all();
+  $db->close();
+  return $arrayPlans;
+}
+
+// Kiem Tra User và Password để login
 function checkLogin($username, $password) {
 
-    $result   =   'not ok';
+    $result   =   false;
+    $db = new Database(DB_SERVER,DB_USER,DB_PASS,DB_DATABASE);
 
-    require 'vendor/autoload.php';
-
-    $service_account_file = 'client_services.json';
-
-    //$spreadsheet_id = '1m_zf3zUJa4iHemxzDSHPJ9KHhN0868ShNoeqc7tQ-kQ';
-    $spreadsheet_id = '1NgZq41xShwrIkxDxX5XpWlI7QL0D8npnfN7slj_gIK0';
-
-    //$spreadsheet_range = 'Buzz kì 6';
-    $spreadsheet_range = 'user';
-
-    $arrayData  = array();
-
-    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-
-    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-
-    $client = new Google_Client();
-    $client->useApplicationDefaultCredentials();
-    $client->addScope(Google_Service_Sheets::SPREADSHEETS_READONLY);
-    $service = new Google_Service_Sheets($client);
-    $result = $service->spreadsheets_values->get($spreadsheet_id, $spreadsheet_range);
-    $arrayData = $result->getValues(); // Mang du lieu
-
-    /*echo '<pre>';
-    print_r($arrayData);
-    echo '</pre>';*/
-
-    foreach($arrayData as $key => $value) {
-      if(trim($username) == trim($value[0]) && trim($password) == trim($value[1])) {
-        $result   =   'ok';
-        break;
-      }
+    $arrayData = $db->query("SELECT * FROM :table WHERE `username` = ':username' AND `password` = ':password'",['table'=>'users','username'=> $username,'password'=> $password ])->fetch();
+    
+    if(!empty($arrayData)) {
+      $result   =   true;
     }
-
-  return $result;
-}
-//$userId, $userName
-// Insert ID User mới vào danh sách các plan
-function insertIdUser($userId, $userName) {
-  $currentPlan    =   getCurrentPlan();
-  $sheetPlan      =   '1m_zf3zUJa4iHemxzDSHPJ9KHhN0868ShNoeqc7tQ-kQ';
-  $sheetBangTinh  =   '1NgZq41xShwrIkxDxX5XpWlI7QL0D8npnfN7slj_gIK0';
-  $result         =   'not ok';
-
-
-  foreach ($currentPlan as $id => $plan) {
-     $result  =   updateIdUser($userId, $userName, $plan, $sheetPlan, $sheetBangTinh);
-  }
-  return $result;
-}
-
-// Update Id New User
-function updateIdUser($userId, $userName, $tenPlan, $sheetPlan, $sheetBangTinh) {
-
-  require 'vendor/autoload.php';
-
-  $service_account_file = 'client_services.json';
-
-  $spreadsheet_id       = $sheetPlan;
-
-  $spreadsheet_bangtinh = $sheetBangTinh;
-
-  $spreadsheet_range    = $tenPlan;
-
-  $status   = 'not ok';
-
-  putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-  $client = new Google_Client();
-  $client->useApplicationDefaultCredentials();
-  $client->addScope(Google_Service_Sheets::SPREADSHEETS);
-  $service = new Google_Service_Sheets($client);
-
-  $result = $service->spreadsheets_values->get($spreadsheet_id, $spreadsheet_range);
-
-  $valueRange= new Google_Service_Sheets_ValueRange($client);
-  $valueRange->setValues(["values" => [$userId]]);
-  $conf = ["valueInputOption" => "RAW"];
-  $arrayData  = $result->getValues();
-
-  $userInfo           =     getDataUser('user', '1NgZq41xShwrIkxDxX5XpWlI7QL0D8npnfN7slj_gIK0');
-  $arrayPlanConvert   =     convertAlphabetKey($userInfo[0]);
-
-  foreach($arrayData as $key => $value) {
-      if(in_array($userName, $value)) {
-          $updateRange  =     $spreadsheet_range.'!a'.($key+1);
-          $service->spreadsheets_values->update($spreadsheet_id, $updateRange, $valueRange, $conf);
-          $service->spreadsheets_values->update($spreadsheet_bangtinh, $updateRange, $valueRange, $conf);
-
-          foreach($arrayPlanConvert as $alpha => $plan) {
-            if($spreadsheet_range  ==   $plan) {
-              $userKey    =   getUserLocationKey($userName);
-              $updateUserRange  =     'user!'.$alpha.($userKey+1);
-              $service->spreadsheets_values->update($spreadsheet_bangtinh, $updateUserRange, $valueRange, $conf);
-            }
-          }
-
-          $status   = 'ok';
-          break;
-      }
-    }
-
-    return $status;
-
-}
-
-function convertAlphabetKey($arrayConvert) {
-  $arrayAlphas = range('A', 'Z');
-  for($i = 0; $i < count($arrayConvert); $i++) {
-    $arrayConvert[$arrayAlphas[$i]]   =   $arrayConvert[$i];
-    unset($arrayConvert[$i]);
-  }
-  return $arrayConvert;
-}
-
-// Lấy vị trí của user để thêm vào bảng user
-function getUserLocationKey($userName) {
-    $result   =   '';
-
-    require 'vendor/autoload.php';
-
-    $service_account_file = 'client_services.json';
-
-    //$spreadsheet_id = '1m_zf3zUJa4iHemxzDSHPJ9KHhN0868ShNoeqc7tQ-kQ';
-    $spreadsheet_id = '1NgZq41xShwrIkxDxX5XpWlI7QL0D8npnfN7slj_gIK0';
-
-    //$spreadsheet_range = 'Buzz kì 6';
-    $spreadsheet_range = 'user';
-
-    $arrayData  = array();
-
-    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-
-    putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $service_account_file);
-
-    $client = new Google_Client();
-    $client->useApplicationDefaultCredentials();
-    $client->addScope(Google_Service_Sheets::SPREADSHEETS_READONLY);
-    $service = new Google_Service_Sheets($client);
-    $result = $service->spreadsheets_values->get($spreadsheet_id, $spreadsheet_range);
-    $arrayData = $result->getValues(); // Mang du lieu
-
-    foreach($arrayData as $key => $value) {
-      if(in_array($userName, $value)) {
-        $result   =   $key;
-        break;
-      }
-    }
-
     return $result;
+    $db->close();
+}
+
+// Thêm telegram_id nếu user mới đăng nhập lần đầu
+function insertTelegramId($userName, $telegramId) {
+  $result     =   false;
+  $db         =   new Database(DB_SERVER,DB_USER,DB_PASS,DB_DATABASE);
+  $arrayData  =   $db->query("SELECT * FROM :table WHERE `username` = ':username'",['table'=>'users','username'=> $userName ])->fetch();
+
+  if(empty($arrayData['telegram_id'])) {
+    $result = $db->update('users',['telegram_id'=> $telegramId]," username = '$userName'");
+  }
+  return $result;
+   $db->close();
+}
+
+// Kiểm tra thông tin Plan của User
+function checkDetailPlan($telegramId, $request = null) {
+  $db         =   new Database(DB_SERVER,DB_USER,DB_PASS,DB_DATABASE);
+  $result_plans = $db->query("SELECT :tenplan_chitiet, :tai_dau_tu, :yeu_cau_khac FROM :table_chitiet WHERE (SELECT :username_users FROM :table_users WHERE :telegram_users = ':telegramId') = :username_chitiet",['table_chitiet'=>'chitietplan', 'table_users'=>'users', 'username_users' => 'username', 'telegram_users' => 'telegram_id', 'telegramId' => $telegramId, 'username_chitiet' => 'username', 'tenplan_chitiet' => 'ten_plan', 'tai_dau_tu' => 'tai_dau_tu', 'yeu_cau_khac' => 'yeu_cau_khac'])->fetch_all();
+  
+  return $result_plans;
+  $db->close();
+}
+
+// Kiểm tra chi tiết các plan
+function answerPlanDetail($telegramId, $queryData) {
+  $db               =       new Database(DB_SERVER,DB_USER,DB_PASS,DB_DATABASE);
+  $arrayResult      =       array();
+  $result           =       '';
+  $getPlans         =       explode("_", $queryData);
+  $currentPlan      =       $getPlans[1];
+   
+  $arrayResult = $db->query("SELECT c.`ten_plan`, c.`so_dao_pos`, c.`so_dau_tu`, c.`co_phan`, c.`so_vi`, u.`ho_ten`, l.`ngay_chia_lai`, l.`lai_coin` FROM `chitietplan` AS c LEFT JOIN `users` AS u ON c.`username` = u.`username` LEFT JOIN `chialai` AS l ON c.`username` = l.`username` WHERE u.`telegram_id` = ':telegram_id' AND c.`ten_plan` = ':current_plan' GROUP BY c.`ten_plan` ORDER BY l.`ngay_chia_lai` DESC", ['telegram_id' => $telegramId, 'current_plan' => $currentPlan])->fetch();
+
+  $result         = "Thông tin plan ".(strtoupper($arrayResult['ten_plan']))." của bạn:\nTên Đăng Ký: ".$arrayResult['ho_ten']."\nSố Coin Đào PoS: ".$arrayResult['so_dao_pos']."\nCổ Phần: ".$arrayResult['co_phan']."%\nSố Ví: ".$arrayResult['so_vi']."\nLãi mới nhất ngày ".$arrayResult['ngay_chia_lai'].": ".$arrayResult['lai_coin'];
+
+  return $result;
+  $db->close();
+  
+}
+
+function updateRequestCoin($telegramId, $tenPlan, $updateText, $typeUpdate) {
+  $db               =       new Database(DB_SERVER,DB_USER,DB_PASS,DB_DATABASE);
+  $userData         =       $db->query("SELECT `username` FROM :table WHERE `telegram_id` = ':telegram_id'",['table'=>'users','telegram_id'=> $telegramId ])->fetch();
+  $currentUser      =       $userData['username'];
+  if($typeUpdate == 'week') {
+    $queryData = $db->update('chitietplan',['tai_dau_tu'=> $updateText]," `ten_plan` = '$tenPlan' AND `username` = '$currentUser'");
+  } elseif($typeUpdate == 'month') {
+    $queryData = $db->update('chitietplan',['yeu_cau_khac'=> $updateText]," `ten_plan` = '$tenPlan' AND `username` = '$currentUser'");
+  }
+  if($queryData  == true) {
+    $result   =   "Cập nhật thành công";
+  } else {
+    $result   =   "Lỗi ! Vui lòng thử lại";
+  }
+  return $result;
+  $db->close();
 }
